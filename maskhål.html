@@ -4,97 +4,104 @@
   <meta charset="UTF-8" />
   <title>maskhål</title>
   <style>
-    body { margin: 0; }
-    canvas { display: block; }
+    html, body { 
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    #container {
+        width: 100%;
+        height: 100%;
+    }
 
     .floating-menu {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    z-index: 9999;
-    width: 220px;
-    padding: 0.75rem;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-    backdrop-filter: blur(8px);
-    background: rgba(30, 30, 30, 0.6);
-    color: #fff;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 9999;
+        width: 220px;
+        padding: 0.75rem;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+        backdrop-filter: blur(8px);
+        background: rgba(30, 30, 30, 0.6);
+        color: #fff;
     }
 
     .menu-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-    font-size: 0.95rem;
-    letter-spacing: 0.2px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+        letter-spacing: 0.2px;
     }
 
     .slider {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto;
-    gap: 0.35rem 0.5rem;
-    align-items: center;
-    margin-bottom: 0.6rem;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        gap: 0.35rem 0.5rem;
+        align-items: center;
+        margin-bottom: 0.6rem;
     }
 
     .slider label {
-    grid-column: 1 / 2;
-    grid-row: 1 / 2;
-    font-size: 0.85rem;
-    color: #eaeaea;
+        grid-column: 1 / 2;
+        grid-row: 1 / 2;
+        font-size: 0.85rem;
+        color: #eaeaea;
     }
 
     .slider output {
-    grid-column: 2 / 3;
-    grid-row: 1 / 2;
-    font-variant-numeric: tabular-nums;
-    color: #cbd5e1;
-    font-size: 0.85rem;
+        grid-column: 2 / 3;
+        grid-row: 1 / 2;
+        font-variant-numeric: tabular-nums;
+        color: #cbd5e1;
+        font-size: 0.85rem;
     }
 
     .slider input[type="range"] {
-    grid-column: 1 / 3;
-    grid-row: 2 / 3;
-    -webkit-appearance: none;
-    appearance: none;
-    height: 0.35rem;
-    background: linear-gradient(90deg, #4f46e5, #06b6d4);
-    border-radius: 999px;
-    outline: none;
+        grid-column: 1 / 3;
+        grid-row: 2 / 3;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 0.35rem;
+        background: linear-gradient(90deg, #4f46e5, #06b6d4);
+        border-radius: 999px;
+        outline: none;
     }
 
     .slider input[type="range"]::-webkit-slider-runnable-track {
-    height: 0.35rem;
-    background: rgba(255, 255, 255, 0.25);
-    border-radius: 999px;
+        height: 0.35rem;
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 999px;
     }
     .slider input[type="range"]::-moz-range-track {
-    height: 0.35rem;
-    background: rgba(255, 255, 255, 0.25);
-    border-radius: 999px;
+        height: 0.35rem;
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 999px;
     }
 
     .slider input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #ffffff;
-    border: 2px solid #4f46e5;
-    margin-top: -6px;
-    cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 2px solid #4f46e5;
+        margin-top: -6px;
     }
     .slider input[type="range"]::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #ffffff;
-    border: 2px solid #4f46e5;
-    cursor: pointer;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 2px solid #4f46e5;
     }
 
 
@@ -120,7 +127,7 @@
 
   <div class="slider">
     <label for="slider-3">Avstånd</label>
-    <input id="slider-3" type="range" min="0" max="1000" value="45" step="0.001">
+    <input id="slider-3" type="range" min="0" max="1000" value="45" step="0.1">
     <output for="slider-3" id="out-3">45</output>
   </div>
 
@@ -160,8 +167,6 @@ const clock = new THREE.Clock();
 const camera = new THREE.OrthographicCamera(-1,1,1,-1,0.1,10);
 camera.position.z = 1;
 
-
-
 let deltaX = 0;
 let deltaY = 0;
 let isPanning = false;
@@ -174,7 +179,8 @@ let outerCurvature;
 let wh1Loc = new THREE.Vector3(0, 0, 0);;
 let wh2Loc = new THREE.Vector3(0, 0, 0);;
 
-let sensitivity = 0.01;
+let sensitivity = 0.005;
+const rotSmooth = 0.35;
 let moveSpeed = 1;
 
 let lookDir = new THREE.Vector3(0, 0, -1); 
@@ -182,9 +188,7 @@ let upDir   = new THREE.Vector3(0, 1, 0);
 let rightDir = new THREE.Vector3(1, 0, 0); 
 let rollSpeed = 2;
 
-let position = new THREE.Vector3(0, 0, -86.73500000*0.5 + 4.96);
-
-
+let position = new THREE.Vector3(0, 0, 40);
 
 async function loadShader(url){
     const response = await fetch(url);
@@ -195,7 +199,7 @@ async function loadBackground(url){
     return await response.text();
 }
 
-document.addEventListener("mousemove", (e) => {
+document.addEventListener("mousemove",(e)=> {
     if(isPanning){
         deltaX += e.movementX;
         deltaY -= e.movementY;
@@ -204,11 +208,11 @@ document.addEventListener("mousemove", (e) => {
 
 const keys = {};
 
-document.addEventListener("keydown", (e) => {
+document.addEventListener("keydown",(e)=> {
     keys[e.code] = true;
 });
 
-document.addEventListener("keyup", (e) => {
+document.addEventListener("keyup",(e)=> {
     keys[e.code] = false;
 });
 
@@ -223,17 +227,12 @@ function checkSpheres(position){
     if(d1 < radie){
         activeSphere = 1;
         radialDistance = d1;
-        
-      //  console.log(d1);
     }else if(d2 < radie){
         activeSphere = 2;
         radialDistance = d2;
-        
-     //           console.log(d2);
     }else if(d1 >= radie && d2 >= radie){
         activeSphere = -1;
         radialDistance = null;
-
     }
 }
 
@@ -243,76 +242,75 @@ function rotateAround(vec, axis, angle){
     return vec.clone().applyQuaternion(q);
 }
 
+//kan finnas sätt att förbättra detta, men funkar.
 function rotateOrientation(axis, angle){
-    lookDir  = (rotateAround(lookDir, axis, angle)).normalize();
-    rightDir = (rotateAround(rightDir, axis, angle)).normalize();
-    upDir    = (rotateAround(upDir, axis, angle)).normalize();
+    lookDir  = rotateAround(lookDir, axis, angle).normalize();
+    rightDir = rotateAround(rightDir, axis, angle).normalize();
+    upDir    = rotateAround(upDir, axis, angle).normalize();
 }
 
-
+//kan finnas sätt att förbättra detta också, men funkar. Ser till 
+//att rotationens riktning korrekt övergår vid telerporteringen
 let wormholeRotSign = 1;
+let currentMultiplier = 1;
+let smoothYaw = 0;
+let smoothPitch = 0;
+let smoothRoll = 0;
 
 function animate(){
+
     const dt = clock.getDelta();
 
-    // Mouse deltas for rotation
+    //basic liten kamera rotationskontroll, vet ej hur bra det egentligen funkar.. Men ok tills vidare. 
+    //basically bara addar tangerande vektorer för right, up, look. 
     const yawDelta   = -deltaX * sensitivity;
-    const pitchDelta =  -deltaY * sensitivity;  // natural Y control
+    const pitchDelta = -deltaY * sensitivity;
+
     deltaX = 0;
     deltaY = 0;
 
-    // Update roll from keys
     let rollDelta = 0;
-    if(keys["KeyQ"]) rollDelta += rollSpeed * dt;
-    if(keys["KeyE"]) rollDelta -= rollSpeed * dt;
+    if (keys["KeyE"]) rollDelta -= 1;
+    if (keys["KeyQ"]) rollDelta += 1;
+    rollDelta *= dt;
 
-    // --- ROTATIONS ---
-    // Yaw around local up
-    if(yawDelta !== 0){
-        lookDir  = (rotateAround(lookDir, upDir, yawDelta)).normalize();
-        rightDir = (rotateAround(rightDir, upDir, yawDelta)).normalize();
-    }
+    smoothYaw   += (yawDelta   - smoothYaw)   * rotSmooth;
+    smoothPitch += (pitchDelta - smoothPitch) * rotSmooth;
+    smoothRoll  += (rollDelta  - smoothRoll)  * rotSmooth;
 
-    // Pitch around local right
-    if(pitchDelta !== 0){
-        // compute tentative lookDir to clamp pitch
-        const testLook = rotateAround(lookDir, rightDir, pitchDelta).clone().normalize();
-        const testPitch = Math.asin(THREE.MathUtils.clamp(testLook.y, -1, 1));
-        const maxPitch = Math.PI/2 - 0.001;
+    //Kontroller ej perfekta, idk vad som en bäst, allt med roll gör att nått känns skumt. 
 
-        let allowedDelta = pitchDelta;
-        if(Math.abs(testPitch) > maxPitch){
-            const currentPitch = Math.asin(THREE.MathUtils.clamp(lookDir.y, -1, 1));
-            allowedDelta = Math.sign(testPitch) * maxPitch - currentPitch;
-        }
+const hasInput = smoothYaw !== 0 || smoothPitch !== 0 || smoothRoll !== 0;
 
-        if(Math.abs(allowedDelta) > 1e-6){
-            lookDir = (rotateAround(lookDir, rightDir, allowedDelta)).normalize();
-            upDir   = (rotateAround(upDir, rightDir, allowedDelta)).normalize();
-        }
-    }
+if (hasInput) {
 
-    // Roll around local forward
-    if(rollDelta !== 0){
-        rightDir = (rotateAround(rightDir, lookDir, rollDelta)).normalize();
-        upDir    = (rotateAround(upDir, lookDir, rollDelta)).normalize();
-    }
+    lookDir.applyAxisAngle(upDir, smoothYaw);
+    rightDir.applyAxisAngle(upDir, smoothYaw);
 
-    // --- MOVEMENT ---
-    const speed = moveSpeed * (keys["ShiftLeft"] ? 3 : 1) * dt;
-    const moveDir = new THREE.Vector3();
-        
+    lookDir.applyAxisAngle(rightDir, smoothPitch);
+    upDir.applyAxisAngle(rightDir, smoothPitch);
+
+    rightDir.applyAxisAngle(lookDir, smoothRoll);
+    upDir.applyAxisAngle(lookDir, smoothRoll);
+}
+
+const targetMultiplier = keys["ShiftLeft"] ? 3 : 1;
+
+currentMultiplier += (targetMultiplier - currentMultiplier) * 0.1; 
+
+const speed = moveSpeed * currentMultiplier * dt;
     if(activeSphere == -1){
-        const moveDir = new THREE.Vector3();
-        if(keys["KeyW"]) moveDir.addScaledVector(lookDir, speed);
-        if(keys["KeyS"]) moveDir.addScaledVector(lookDir, -speed);
-        if(keys["KeyA"]) moveDir.addScaledVector(rightDir, -speed);
-        if(keys["KeyD"]) moveDir.addScaledVector(rightDir, speed);
-        position.add(moveDir);
+        const moveDelta = new THREE.Vector3();
+        if(keys["KeyW"])moveDelta.addScaledVector(lookDir,  speed);
+        if(keys["KeyS"])moveDelta.addScaledVector(lookDir, -speed);
+        if(keys["KeyA"])moveDelta.addScaledVector(rightDir, -speed);
+        if(keys["KeyD"])moveDelta.addScaledVector(rightDir,  speed);
+        position.add(moveDelta);
     }
 
     checkSpheres(position);
 
+    //Om inne i WH, ändra till med radiella / roterande kordinater kontroller, resulterar i rörelse över geodeesic (tror jag)
     if(activeSphere == 1 || activeSphere == 2){
         let center = activeSphere == 1 ? wh1Loc : wh2Loc;
         const radialDir = new THREE.Vector3().subVectors(position, center).normalize();
@@ -321,110 +319,78 @@ function animate(){
         let rotAxis = new THREE.Vector3();
         let radialMovement = 0;
         
-        // Process W/S
         if(keys["KeyW"] || keys["KeyS"]){
             const dir = keys["KeyW"] ? 1 : -1;
             const radComp = lookDir.dot(radialDir);
             const tangComp = Math.sqrt(Math.max(0, 1 - radComp * radComp));
             
-            radialMovement += dir * radComp * speed ;
+            radialMovement += dir * radComp * speed;
             
             if(tangComp > 0.001){
                 const tangDir = new THREE.Vector3().copy(lookDir).addScaledVector(radialDir, -radComp).normalize();
                 const axis = new THREE.Vector3().crossVectors(radialDir, tangDir).normalize();
                 const angle = wormholeRotSign * dir * tangComp * speed / radie;
                 //I THINK this wormHoleRotSign should be here. Now 100% sure.
-                
-                if(totalAngle == 0) rotAxis.copy(axis);
+                if(totalAngle == 0)rotAxis.copy(axis);
                 else rotAxis.add(axis).normalize();
                 totalAngle += angle;
             }
         }
-        
-        // Process A/D
         if(keys["KeyA"] || keys["KeyD"]){
             const dir = keys["KeyD"] ? 1 : -1;
             const radComp = rightDir.dot(radialDir);
             const tangComp = Math.sqrt(Math.max(0, 1 - radComp * radComp));
             
-            radialMovement += dir * radComp * speed ;
+            radialMovement += dir * radComp * speed;
             
             if(tangComp > 0.001){
                 const tangDir = new THREE.Vector3().copy(rightDir).addScaledVector(radialDir, -radComp).normalize();
                 const axis = new THREE.Vector3().crossVectors(radialDir, tangDir).normalize();
                 const angle = wormholeRotSign * dir * tangComp * speed / radie;
                 //I THINK this wormHoleRotSign should be here. Now 100% sure.
-                if(totalAngle == 0) rotAxis.copy(axis);
+                if(totalAngle == 0)rotAxis.copy(axis);
                 else rotAxis.add(axis).normalize();
                 totalAngle += angle;
             }
         }
         
-        // Apply movements
-        if(Math.abs(radialMovement) > 0.0001) position.addScaledVector(radialDir, radialMovement);
+        if(Math.abs(radialMovement)> 0.0001)position.addScaledVector(radialDir, radialMovement);
         
-        if(Math.abs(totalAngle) > 0.0001){
+        if(Math.abs(totalAngle)> 0.0001){
             const offset = new THREE.Vector3().subVectors(position, center);
             position.copy(center).add(rotateAround(offset, rotAxis, totalAngle));
-            (lookDir.copy(rotateAround(lookDir, rotAxis, totalAngle))).normalize();
-            (rightDir.copy(rotateAround(rightDir, rotAxis, totalAngle))).normalize();
-            (upDir.copy(rotateAround(upDir, rotAxis, totalAngle))).normalize();
+           (lookDir.copy(rotateAround(lookDir, rotAxis, totalAngle))).normalize();
+           (rightDir.copy(rotateAround(rightDir, rotAxis, totalAngle))).normalize();
+           (upDir.copy(rotateAround(upDir, rotAxis, totalAngle))).normalize();
         }
     }
 
-    if(activeSphere == 1){
+    if(activeSphere == 1 || activeSphere == 2){
+        const currentLoc = (activeSphere == 1) ? wh1Loc : wh2Loc;
+        const nextLoc = (activeSphere == 1) ? wh2Loc : wh1Loc;
+
         if(radialDistance < radie * 0.5){
-           // console.log(radialDistance);
-            let offset = position.clone().sub(wh1Loc).normalize();
+            let offset = position.clone().sub(currentLoc).normalize();
             offset.z = -offset.z;
+
             let newDist = radie - radialDistance;
-          //  console.log(newDist);
-            const toNextHole = wh1Loc.clone().sub(wh2Loc).normalize();
+
+            const toNextHole = nextLoc.clone().sub(currentLoc).normalize();
             const angle = Math.acos(THREE.MathUtils.clamp(lookDir.dot(toNextHole), -1, 1));
             const axis = new THREE.Vector3().crossVectors(lookDir, toNextHole).normalize();
             rotateOrientation(axis, 2 * angle);
+
             upDir.negate();
             rightDir.negate();
             wormholeRotSign *= -1;
-
-            position = position.copy(wh2Loc).add(offset.multiplyScalar(newDist));
+    //        if(activeSphere == 1)
+            position.copy(nextLoc).add(offset.multiplyScalar(newDist * (1.0001)));
         }
-        }else if(activeSphere == 2){
-            if(radialDistance < radie * 0.5){
-               // console.log(radialDistance);
-                let offset = position.clone().sub(wh2Loc).normalize();
-                offset.z = -offset.z;
-                let newDist = radie - radialDistance;
-             //   console.log(newDist);
-                const toNextHole = wh2Loc.clone().sub(wh1Loc).normalize();
-                const angle = Math.acos(THREE.MathUtils.clamp(lookDir.dot(toNextHole), -1, 1));
-                const axis = new THREE.Vector3().crossVectors(lookDir, toNextHole).normalize();
-                rotateOrientation(axis, 2 * angle);
-                upDir.negate();
-                rightDir.negate();
-                wormholeRotSign *= -1;
-
-                position = position.copy(wh1Loc).add(offset.multiplyScalar(newDist));
-            }
     }
 
-
-
-    //temp, kanske ska bli meny?
-  //  if(keys["KeyL"]){
-    //    tubeLength += 0.05;
-     //   shaderMaterial.uniforms.u_tubeLength.value = tubeLength;
-//    }
-
-
-  //  if(keys["KeyO"]){
-  //      tubeLength -= 0.05;
-   //     shaderMaterial.uniforms.u_tubeLength.value = tubeLength;
-   // }
-   // console.log(tubeLength)
     shaderMaterial.uniforms.u_camPos.value.copy(position);
-    shaderMaterial.uniforms.u_lookDir.value.copy(lookDir);
-    shaderMaterial.uniforms.u_planeDir.value.copy(rightDir);
+    shaderMaterial.uniforms.u_lookDir.value.copy(lookDir).normalize();
+    shaderMaterial.uniforms.u_rightDir.value.copy(rightDir.normalize());
     shaderMaterial.uniforms.u_upDir.value.copy(upDir);
     shaderMaterial.uniforms.u_time.value = dt;
 
@@ -432,16 +398,15 @@ function animate(){
     requestAnimationFrame(animate);
 }
 
-
 const loader = new THREE.TextureLoader();
 async function init(){
    
     const fragmentShader = await loadShader('mh.glsl');
     const loader = new THREE.TextureLoader();
-    const space2 = await new Promise((resolve, reject) =>{
-        loader.load('space.png', resolve, undefined, reject);
+    const space2 = await new Promise((resolve, reject)=>{
+        loader.load('space2.png', resolve, undefined, reject);
     });
-    const space1 = await new Promise((resolve, reject) =>{
+    const space1 = await new Promise((resolve, reject)=>{
         loader.load('space3.png', resolve, undefined, reject);
     });
     space2.minFilter = THREE.LinearFilter;
@@ -454,24 +419,23 @@ async function init(){
             u_time: { value: 0 },
             u_camPos: { value: new THREE.Vector3()},
             u_lookDir: { value: new THREE.Vector3()},
-            u_planeDir: { value: new THREE.Vector3()},
+            u_rightDir: { value: new THREE.Vector3()},
             u_upDir: { value: new THREE.Vector3()},
-            u_resolution: { value: new THREE.Vector2(width, height) },
+            u_resolution: { value: new THREE.Vector2(width, height)},
             u_texSpace2: { value: space2 },
             u_texSpace1: { value: space1 },
             u_radie : { value : radie},
             u_tubeLength : { value :tubeLength},
             u_distance : { value :distance},
             u_outerCurvature : { value : outerCurvature},
-
         }
     });
 
     const sliders =[
-        { input: 'slider-1', out: 'out-1', uniform: 'u_tubeLength', globalVar: 'tubeLength', format: v => Number(v).toFixed(4) },
-        { input: 'slider-2', out: 'out-2', uniform: 'u_radie', globalVar: 'radie', format: v => Number(v).toFixed(4) },
-        { input: 'slider-3', out: 'out-3', uniform: 'u_distance', globalVar: 'distance', format: v => Number(v).toFixed(8) },
-        { input: 'slider-4', out: 'out-4', uniform: 'u_outerCurvature', globalVar: 'outerCurvature', format: v => Number(v).toFixed(4) }
+        { input: 'slider-1', out: 'out-1', uniform: 'u_tubeLength', globalVar: 'tubeLength', format: v => Number(v).toFixed(4)},
+        { input: 'slider-2', out: 'out-2', uniform: 'u_radie', globalVar: 'radie', format: v => Number(v).toFixed(4)},
+        { input: 'slider-3', out: 'out-3', uniform: 'u_distance', globalVar: 'distance', format: v => Number(v).toFixed(8)},
+        { input: 'slider-4', out: 'out-4', uniform: 'u_outerCurvature', globalVar: 'outerCurvature', format: v => Number(v).toFixed(4)}
     ];
 
     sliders.forEach(({ input, out, uniform, globalVar, format })=>{
@@ -498,7 +462,7 @@ async function init(){
     });
 
 
-    window.addEventListener("resize", () => {
+    window.addEventListener("resize",()=> {
         const width = window.innerWidth;
         const height = window.innerHeight;
 
@@ -511,11 +475,11 @@ async function init(){
     
     const container = document.getElementById("container");
 
-    container.addEventListener("click", () => {
+    container.addEventListener("click",()=> {
         container.requestPointerLock();
     });
 
-    document.addEventListener("pointerlockchange", () => {
+    document.addEventListener("pointerlockchange",()=> {
         if(document.pointerLockElement == container){
             isPanning = true;
         }else {
@@ -523,7 +487,7 @@ async function init(){
         }
     });
 
-    document.addEventListener("pointerlockerror", () => {
+    document.addEventListener("pointerlockerror",()=> {
         isPanning = false;
     });
     

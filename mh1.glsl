@@ -4,7 +4,7 @@ uniform vec2 u_resolution;
 uniform vec3 u_camPos;
 
 uniform vec3 u_lookDir;
-uniform vec3 u_planeDir;
+uniform vec3 u_rightDir;
 uniform vec3 u_upDir;
 
 uniform sampler2D u_texSpace2;
@@ -51,12 +51,12 @@ bool willHitSphere(vec3 rayOrigin, vec3 rayDir, vec3 center, float radius){
 }
 
 float SHRAngle(float dist){
-    float xs = -dist / 1.0;
+    float xs = dist / 1.0;
     return (PI/2.0) + (PI/2.0) * (xs / sqrt(1.0 + xs*xs));
 }
 
 float ESR2Angle(float dist){
-    float xs = -dist / u_tubeLength;
+    float xs = dist / u_tubeLength;
     return (PI/2.0) + (PI/2.0) * (xs / sqrt(1.0 + xs*xs));
 }
 
@@ -86,7 +86,7 @@ void main(){
     vec2 ndc = vUv * 2.0 - 1.0;
     float aspect = u_resolution.x / u_resolution.y;
 
-    vec3 worldDir = normalize(ndc.x * u_planeDir * aspect - ndc.y * u_upDir + u_lookDir);
+    vec3 worldDir = normalize(ndc.x * u_rightDir * aspect - ndc.y * u_upDir + u_lookDir);
 
     vec3 to_wh = -u_camPos;
     float distToWH = length(to_wh);
@@ -121,7 +121,6 @@ void main(){
         deflection = approxV1(percentAngle, distToWH);
     }
 
-    // compute rotation axis safely
     vec3 axis = cross(worldDir, dirToWH);
     
     axis = normalize(axis);
