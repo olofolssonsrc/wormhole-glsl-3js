@@ -50,13 +50,7 @@ float intersectSphere(vec3 rayOrigin, vec3 rayDir, vec3 center, float radius){
     return t;
 }
 
-bool goesThroughHole(
-    vec3 hitPos,
-    vec3 worldDir,
-    vec3 center,
-    float rs,
-    float R_outer
-){
+bool goesThroughHole(vec3 hitPos, vec3 worldDir, vec3 center, float rs, float R_outer){
     vec3 toC = center - hitPos;
     float dist = length(toC);
 
@@ -69,15 +63,8 @@ bool goesThroughHole(
 
     return angle <= angleLimit;
 }
-float deflection_DL(
-    vec3 pos,
-    vec3 dir,
-    vec3 center,
-    float rs,
-    float R_outer,
-    out vec3 newStart,
-    out vec3 newDir
-){
+
+vec3 deflection_DL(vec3 pos, vec3 dir, vec3 center, float rs, float R_outer, out vec3 newStart, out vec3 newDir){
     vec3 toC = center - pos;
 
     vec3 oc = pos - center;
@@ -111,7 +98,7 @@ float deflection_DL(
     }else{
         newStart = pos + dir * tExit;
         newDir = dir;
-        return 0.0;
+        return vec3(0.0);
     }
 
     defPerc = clamp(defPerc, 0.0, 1.0);
@@ -121,42 +108,37 @@ float deflection_DL(
     vec3 axis = normalize(cross(dir, normalize(toC)));
 
     if(angle < angleMin){
+
         vec3 otherWH = center;
         otherWH.z *= -1.0;
-        vec3 toOtherWh = normalize(otherWH - center);
 
-        float angleTT = acos(clamp(dot(dir, toOtherWh), -1.0, 1.0));
-        vec3 axisKUK = normalize(cross(dir, toOtherWh));
-        dir = normalize(rotateAround(dir, axisKUK, 2.0*angleTT));
-        inOffset = normalize(rotateAround(-inOffset, axisKUK, 2.0*angleTT));
-        
-        vec3 AxisOff2kuk = normalize(cross(dir, inOffset));
-        
-        newDir = normalize(rotateAround(dir, AxisOff2kuk, f));
-        newStart = otherWH + rotateAround(inOffset , AxisOff2kuk , f) * R_outer;
+        vec3 toOtherWH = normalize(otherWH - center);
 
+        float cosTheta = dot(normalize(dir), toOtherWH); 
+        defPerc = 1.0 - cosTheta * cosTheta;
+
+        vec3 offset22 = offset;
+        offset22.z *= -1.0;
+        newStart = otherWH + (-offset22 * 1.001);
+        newDir   = 2.0 * dot(dir, toOtherWH) * toOtherWH - dir;
+
+        vec3 axis2 = normalize(cross(newDir, -offset22));
+
+        newDir = rotateAround(newDir, axis2, f*2.0);
+        newStart = otherWH + rotateAround(-offset22 * 1.001, axis2, f*2.0);
+
+        return vec3(f) * 0.30;
     }else{
-        offset = rotateAround(offset, axis, f);
-        dir = rotateAround(dir, axis, f);
+
+        offset = rotateAround(offset, axis, f * 2.0);
+        dir = rotateAround(dir, axis, f * 2.0);
         newStart = center +  (offset * 1.001);
         newDir = dir;
+        return vec3(f) * 0.3;
     }
-    return abs(f);
+    return vec3(0.0);
 }
 
-/*
-
-        vec3 otherWH = center;
-        otherWH.z *= -1.0;
-        vec3 toOtherWh = normalize(otherWH - center);
-        float angleTT = acos(clamp(dot(dir, toOtherWh), -1.0, 1.0));
-        vec3 axisKUK = normalize(cross(dir, toOtherWh));
-        dir = normalize(rotateAround(dir, axisKUK, 2.0*angleTT));
-        vec3 axis2KUK = normalize(cross(dir, normalize(inOffset)));
-
-        newDir = rotateAround(dir, axis2KUK, f);
-        newStart = otherWH + rotateAround(inOffset, axis2KUK, f)*(1.001);
-*/
 void main(){
     vec3 wh1pos = vec3(0.0, 0.0, -u_distance * 0.5);
     vec3 wh2pos = vec3(0.0, 0.0, u_distance * 0.5);
@@ -228,25 +210,21 @@ void main(){
                 hitPos = u_camPos;
             }
 
-            if(goesThroughHole(
-                hitPos,
-                worldDir,
-                center,
-                u_radie,
-                u_radie * ofac
-            )){
-              //  acc += vec3(0.0, 0.0, 0.2);
-            }
+          
 
             vec3 tmpStart;
             vec3 tmpDir;
 
-            float defPerc = deflection_DL(hitPos, worldDir, center, u_radie, u_radie*ofac, tmpStart, tmpDir);
+            vec3 defPerc = deflection_DL(hitPos, worldDir, center, u_radie, u_radie*ofac, tmpStart, tmpDir);
+          
+            if(goesThroughHole(hitPos, worldDir, center, u_radie, u_radie * ofac)){
+               
+            }
             start = tmpStart;
             worldDir = tmpDir;
-
-         //   acc += vec3(defPerc);
-        //    break;
+ //acc += defPerc;
+          //  acc += vec3(defPerc);
+            //break;
         }else{
             vec3 color = vec3(colorsR[hitIndex], colorsG[hitIndex], colorsB[hitIndex]);
             float bright = max(dot(hitNormal, lightDir), 0.0);

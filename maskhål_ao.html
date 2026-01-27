@@ -372,7 +372,7 @@ async function init(){
     const fragmentShader = await loadShader('mh_anotherOne.glsl');
     const loader = new THREE.TextureLoader();
     const space2 = await new Promise((resolve, reject)=>{
-        loader.load('space2.png', resolve, undefined, reject);
+        loader.load('space.png', resolve, undefined, reject);
     });
     const space1 = await new Promise((resolve, reject)=>{
         loader.load('space3.png', resolve, undefined, reject);
