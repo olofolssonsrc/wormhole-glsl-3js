@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sphere–Plane</title>
+  <style>
+    body { margin: 0; background: #0e0e11; overflow: hidden; }
+    canvas { display: block; }
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-family: monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      user-select: none;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 10px 12px;
+      border-radius: 8px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 18px 160px 52px;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .row input[type="range"] { width: 160px; }
+    .section { margin-bottom: 10px; }
+    .label { opacity: 0.9; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<div id="ui">
+  <div class="section">
+    <div class="label">Sphere position</div>
+    <div class="row"><span>r</span><input id="pr" type="range" min="0" max="18" step="0.01" value="3"><span id="prv">3.00</span></div>
+    <div class="row"><span>a</span><input id="pa" type="range" min="0" max="6.28318530718" step="0.001" value="0.785398"><span id="pav">0.79</span></div>
+    <div class="row"><span>e</span><input id="pe" type="range" min="-1.57079632679" max="1.57079632679" step="0.001" value="0.61548"><span id="pev">0.62</span></div>
+  </div>
+  <div class="section" style ="display : none">
+    <div class="label">Plane normal</div>
+    <div class="row"><span>nx</span><input id="nx" type="range" min="-2" max="2" step="0.01" value="0.5"><span id="nxv">0.50</span></div>
+    <div class="row"><span>ny</span><input id="ny" type="range" min="-2" max="2" step="0.01" value="-1.5"><span id="nyv">-1.50</span></div>
+    <div class="row"><span>nz</span><input id="nz" type="range" min="-2" max="2" step="0.01" value="0.5"><span id="nzv">0.50</span></div>
+  </div>
+  <div class="section">
+    <div class="label">Rotation around n</div>
+    <div class="row"><span>t</span><input id="slider" type="range" min="0" max="6.28318530718" step="0.001" value="0"><span id="tv">0.00</span></div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 200);
+camera.position.set(3, 2, 3);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(devicePixelRatio);
+renderer.setClearColor(0x0e0e11, 1);
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+
+const P = new THREE.Vector3(3, 3, 3);
+const n = new THREE.Vector3(0.5, -1.5, 0.5).normalize();
+const R = 0.5;
+
+const R_outer = 6;
+const rs = 1;
+const depth = 7;
+
+
+const sphereUniforms = {
+  u_rs: { value: rs },
+  u_Router: { value: R_outer },
+  u_depth: { value: depth },
+  u_position: { value: new THREE.Vector3() }
+};
+
+const sphereMat = new THREE.ShaderMaterial({
+  uniforms: sphereUniforms,
+  vertexShader: `
+    varying vec3 vPos;
+
+    void main() {
+      vPos = position;
+
+      vec3 pos = position;
+
+      // TODO:
+      // shift pos along radial direction depending on distance to rs
+      // use length(pos + modelMatrix * vec4(...)) or similar
+
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vPos;
+
+    void main() {
+      gl_FragColor = vec4(1.0, 0.3, 0.3, 0.7);
+    }
+  `,
+  transparent: true
+});
+
+const sphere = new THREE.Mesh(
+  new THREE.SphereGeometry(R, 128, 128),
+  sphereMat
+);
+
+scene.add(sphere);
+
+const rsShell = new THREE.Mesh(
+  new THREE.SphereGeometry(1, 64, 64),
+  new THREE.MeshBasicMaterial({ color: 0x55ffaa, wireframe: true, transparent: true, opacity: 0.18 })
+);
+scene.add(rsShell);
+
+const outerShell = new THREE.Mesh(
+  new THREE.SphereGeometry(6, 64, 64),
+  new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.12 })
+);
+scene.add(outerShell);
+
+const plane = new THREE.Mesh(
+  new THREE.PlaneGeometry(32, 32),
+  new THREE.MeshStandardMaterial({ color: 0x3388ff, side: THREE.DoubleSide, transparent: true, opacity: 0.25 })
+);
+scene.add(plane);
+
+scene.add(new THREE.AxesHelper(3));
+
+const up = new THREE.Vector3(0, 0, 1);
+
+const nn = new THREE.Vector3();
+const tmp = new THREE.Vector3();
+const u = new THREE.Vector3();
+const v = new THREE.Vector3();
+const planeDir = new THREE.Vector3();
+const closest = new THREE.Vector3();
+const resDir = new THREE.Vector3();
+const baseDir = new THREE.Vector3();
+
+const arrowU = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), P.clone(), R, 0x00ff00);
+const arrowV = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), P.clone(), R, 0x4444ff);
+
+scene.add(arrowU);
+scene.add(arrowV);
+
+const pointClosest = new THREE.Mesh(
+  new THREE.SphereGeometry(0.06, 16, 16),
+  new THREE.MeshBasicMaterial({ color: 0xff0000 })
+);
+scene.add(pointClosest);
+
+const pointRot = new THREE.Mesh(
+  new THREE.SphereGeometry(0.06, 16, 16),
+  new THREE.MeshBasicMaterial({ color: 0xffff00 })
+);
+scene.add(pointRot);
+
+const slider = document.getElementById("slider");
+const pr = document.getElementById("pr");
+const pa = document.getElementById("pa");
+const pe = document.getElementById("pe");
+const nx = document.getElementById("nx");
+const ny = document.getElementById("ny");
+const nz = document.getElementById("nz");
+const prv = document.getElementById("prv");
+const pav = document.getElementById("pav");
+const pev = document.getElementById("pev");
+const nxv = document.getElementById("nxv");
+const nyv = document.getElementById("nyv");
+const nzv = document.getElementById("nzv");
+const tv = document.getElementById("tv");
+
+
+function readInput() {
+  return {
+    pr: parseFloat(pr.value),
+    pa: parseFloat(pa.value),
+    pe: parseFloat(pe.value),
+    nx: parseFloat(nx.value),
+    ny: parseFloat(ny.value),
+    nz: parseFloat(nz.value),
+    t: parseFloat(slider.value)
+  };
+}function rOfL(l) {
+  const u = (l - rs) / (R_outer - rs);
+  return rs + (R_outer - rs) * (u * u);
+}
+
+function invROfL(r) {
+  const u = (r - rs) / (R_outer - rs);
+  return rs + (R_outer - rs) * Math.sqrt(u);
+}
+function computeState(inp) {
+  const { pr, pa, pe, nx, ny, nz, t } = inp;
+
+  const cp = Math.cos(pe);
+  const sp = Math.sin(pe);
+  const ca = Math.cos(pa);
+  const sa = Math.sin(pa);
+
+  const P = new THREE.Vector3(
+    pr * cp * ca,
+    pr * cp * sa,
+    pr * sp
+  );
+
+  const n = new THREE.Vector3(nx, ny, nz);
+  if (n.lengthSq() === 0) n.set(0, 0, 1);
+  const nn = n.clone().normalize();
+
+  const closest = P.clone().sub(nn.clone().multiplyScalar(P.dot(nn)));
+  closest.normalize();
+  closest.multiplyScalar(P.length());
+
+  const baseDir = closest.clone().normalize().negate();
+  const v = new THREE.Vector3().crossVectors(nn, baseDir).normalize();
+
+  const l = P.length();
+
+  const theta = Math.acos(
+    THREE.MathUtils.clamp(
+      P.dot(closest) / (P.length() * closest.length()),
+      -1, 1
+    )
+  );
+
+  const s = l * theta;
+  const proRad = s / R;
+  const sliceRad = Math.sqrt(Math.max(0, 1 - proRad * proRad));
+
+const x = Math.cos(t) * R * sliceRad;
+const y = Math.sin(t) * R * sliceRad;
+
+const local = closest.clone()
+  .addScaledVector(baseDir, x)
+  .addScaledVector(v, y);
+
+const d = local.length();
+const d2 = rOfL(d);
+
+const resDir = local.clone().multiplyScalar(1);
+  return {
+    P,
+    nn,
+    closest,
+    baseDir,
+    v,
+    resDir,
+    l
+  };
+}
+
+// ---- APPLY ----
+function applyState(state, inp) {
+  const { P, nn, closest, baseDir, v, resDir, l } = state;
+
+  sphere.position.copy(P);
+  sphereUniforms.u_position.value.copy(P);
+
+  plane.quaternion.copy(new THREE.Quaternion().setFromUnitVectors(up, nn));
+
+  arrowU.position.copy(closest);
+  arrowV.position.copy(closest);
+  arrowU.setDirection(baseDir);
+  arrowV.setDirection(v);
+  arrowU.setLength(R);
+  arrowV.setLength(R);
+
+  pointClosest.position.copy(closest);
+  pointRot.position.copy(resDir);
+
+
+  prv.textContent = inp.pr.toFixed(2);
+  pav.textContent = inp.pa.toFixed(2);
+  pev.textContent = inp.pe.toFixed(2);
+  nxv.textContent = inp.nx.toFixed(2);
+  nyv.textContent = inp.ny.toFixed(2);
+  nzv.textContent = inp.nz.toFixed(2);
+  tv.textContent = inp.t.toFixed(5);
+}
+
+// ---- MAIN ----
+function updateAll() {
+  const inp = readInput();
+  const state = computeState(inp);
+  applyState(state, inp);
+}
+
+
+pr.addEventListener("input", updateAll);
+pa.addEventListener("input", updateAll);
+pe.addEventListener("input", updateAll);
+nx.addEventListener("input", updateAll);
+ny.addEventListener("input", updateAll);
+nz.addEventListener("input", updateAll);
+slider.addEventListener("input", updateAll);
+
+updateAll();
+
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(5, 5, 5);
+scene.add(light);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+
+addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+</script>
+</body>
+</html>

@@ -10,11 +10,13 @@ app.get("/sh", (req, res) => {
   res.sendFile(path.join(__dirname, "maskhål.html"));
 });
 
-
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "maskhål_ao.html"));
+  res.sendFile(path.join(__dirname, "maskhål.html"));
 });
 
+app.get("/cool", (req, res) => {
+  res.sendFile(path.join(__dirname, "cool.html"));
+});
 
 app.listen(PORT, () => {
   console.log(`listening on http://localhost:${PORT}`);

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <title>maskhål</title>
+  <style>
+    html, body { 
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    #container {
+        width: 100%;
+        height: 100%;
+    }
+
+    .floating-menu {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 9999;
+        width: 220px;
+        padding: 0.75rem;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+        backdrop-filter: blur(8px);
+        background: rgba(30, 30, 30, 0.6);
+        color: #fff;
+    }
+
+    .menu-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+        letter-spacing: 0.2px;
+    }
+
+    .slider {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        gap: 0.35rem 0.5rem;
+        align-items: center;
+        margin-bottom: 0.6rem;
+    }
+
+    .slider label {
+        grid-column: 1 / 2;
+        grid-row: 1 / 2;
+        font-size: 0.85rem;
+        color: #eaeaea;
+    }
+
+    .slider output {
+        grid-column: 2 / 3;
+        grid-row: 1 / 2;
+        font-variant-numeric: tabular-nums;
+        color: #cbd5e1;
+        font-size: 0.85rem;
+    }
+
+    .slider input[type="range"] {
+        grid-column: 1 / 3;
+        grid-row: 2 / 3;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 0.35rem;
+        background: linear-gradient(90deg, #4f46e5, #06b6d4);
+        border-radius: 999px;
+        outline: none;
+    }
+
+    .slider input[type="range"]::-webkit-slider-runnable-track {
+        height: 0.35rem;
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 999px;
+    }
+    .slider input[type="range"]::-moz-range-track {
+        height: 0.35rem;
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 999px;
+    }
+
+    .slider input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 2px solid #4f46e5;
+        margin-top: -6px;
+    }
+    .slider input[type="range"]::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 2px solid #4f46e5;
+    }
+
+
+  </style>
+</head>
+<body>
+    <div class="floating-menu" role="region" aria-label="inst">
+  <header class="menu-header">
+    <strong>Inställningar</strong>
+  </header>
+
+  <div class="slider">
+    <label for="slider-1">Rak tub längd</label>
+    <input id="slider-1" type="range" min="0" max="50" value="16"step="0.01">
+    <output for="slider-1" id="out-1">16</output>
+  </div>
+
+  <div class="slider">
+    <label for="slider-2">Radie</label>
+    <input id="slider-2" type="range" min="0.1" max="20" value="5" step="0.01">
+    <output for="slider-2" id="out-2">5</output>
+  </div>
+
+  <div class="slider">
+    <label for="slider-3">Avstånd</label>
+    <input id="slider-3" type="range" min="0" max="1000" value="45" step="0.1">
+    <output for="slider-3" id="out-3">45</output>
+  </div>
+
+  <div class="slider">
+    <label for="slider-4">Mynning kurvatur</label>
+    <input id="slider-4" type="range" min="0" max="100" value="20" step="0.01">
+    <output for="slider-4" id="out-4">20</output>
+  </div>
+</div>
+
+<div id="container"></div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const scene = new THREE.Scene();
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(width, height);
+document.getElementById("container").appendChild(renderer.domElement);
+
+const geometry = new THREE.PlaneGeometry(2, 2);
+
+const vertexShader = `varying vec2 vUv;
+void main(){
+    vUv = uv;
+    gl_Position = vec4(position, 1.0);
+}
+`;
+
+let shaderMaterial;
+
+const clock = new THREE.Clock();
+
+const camera = new THREE.OrthographicCamera(-1,1,1,-1,0.1,10);
+camera.position.z = 1;
+
+let deltaX = 0;
+let deltaY = 0;
+let isPanning = false;
+
+let tubeLength;
+let radie;
+let distance;
+let outerCurvature;
+
+let wh1Loc = new THREE.Vector3(0, 0, 0);;
+let wh2Loc = new THREE.Vector3(0, 0, 0);;
+
+let sensitivity = 0.005;
+const rotSmooth = 0.35;
+let moveSpeed = 2;
+
+let lookDir = new THREE.Vector3(0, 0, -1); 
+let upDir   = new THREE.Vector3(0, 1, 0); 
+let rightDir = new THREE.Vector3(1, 0, 0); 
+let rollSpeed = 2;
+
+let position = new THREE.Vector3(0, 0, 40);
+
+async function loadShader(url){
+    const response = await fetch(url);
+    return await response.text();
+}
+async function loadBackground(url){
+    const response = await fetch(url);
+    return await response.text();
+}
+
+document.addEventListener("mousemove",(e)=> {
+    if(isPanning){
+        deltaX += e.movementX;
+        deltaY -= e.movementY;
+    }
+});
+
+const keys = {};
+
+document.addEventListener("keydown",(e)=> {
+    keys[e.code] = true;
+});
+
+document.addEventListener("keyup",(e)=> {
+    keys[e.code] = false;
+});
+
+let activeSphere; 
+let radialDistance;
+
+function checkSpheres(position){
+    
+    const d1 = position.distanceTo(wh1Loc);
+    const d2 = position.distanceTo(wh2Loc);
+
+    if(d1 < radie * 2.5 ){
+        activeSphere = 1;
+        radialDistance = d1;
+    }else if(d2 < radie * 2.5 ){
+        activeSphere = 2;
+        radialDistance = d2;
+    }else if(d1 >= radie * 2.5  && d2 >= radie * 2.5){
+        activeSphere = -1;
+        radialDistance = null;
+    }
+}
+
+function rotateAround(vec, axis, angle){
+    const q = new THREE.Quaternion();
+    q.setFromAxisAngle(axis, angle);
+    return vec.clone().applyQuaternion(q);
+}
+
+//kan finnas sätt att förbättra detta, men funkar.
+function rotateOrientation(axis, angle){
+    lookDir  = rotateAround(lookDir, axis, angle).normalize();
+    rightDir = rotateAround(rightDir, axis, angle).normalize();
+    upDir    = rotateAround(upDir, axis, angle).normalize();
+}
+
+//kan finnas sätt att förbättra detta också, men funkar. Ser till 
+//att rotationens riktning korrekt övergår vid telerporteringen
+let wormholeRotSign = 1;
+let currentMultiplier = 1;
+let smoothYaw = 0;
+let smoothPitch = 0;
+let smoothRoll = 0;
+
+function animate(){
+
+    const dt = clock.getDelta();
+
+    //basic liten kamera rotationskontroll, vet ej hur bra det egentligen funkar.. Men ok tills vidare. 
+    //basically bara addar tangerande vektorer för right, up, look. 
+    const yawDelta   = -deltaX * sensitivity;
+    const pitchDelta = -deltaY * sensitivity;
+
+    deltaX = 0;
+    deltaY = 0;
+
+    let rollDelta = 0;
+    if (keys["KeyE"]) rollDelta -= 1;
+    if (keys["KeyQ"]) rollDelta += 1;
+    rollDelta *= dt;
+
+    smoothYaw   += (yawDelta   - smoothYaw)   * rotSmooth;
+    smoothPitch += (pitchDelta - smoothPitch) * rotSmooth;
+    smoothRoll  += (rollDelta  - smoothRoll)  * rotSmooth;
+
+    //Kontroller ej perfekta, idk vad som en bäst, allt med roll gör att nått känns skumt. 
+
+    const hasInput = smoothYaw !== 0 || smoothPitch !== 0 || smoothRoll !== 0;
+
+    if (hasInput) {
+
+        lookDir.applyAxisAngle(upDir, smoothYaw);
+        rightDir.applyAxisAngle(upDir, smoothYaw);
+
+        lookDir.applyAxisAngle(rightDir, smoothPitch);
+        upDir.applyAxisAngle(rightDir, smoothPitch);
+
+        rightDir.applyAxisAngle(lookDir, smoothRoll);
+        upDir.applyAxisAngle(lookDir, smoothRoll);
+    }
+
+    const targetMultiplier = keys["ShiftLeft"] ? 3 : 1;
+
+    currentMultiplier += (targetMultiplier - currentMultiplier) * 0.1; 
+
+    const speed = moveSpeed * currentMultiplier * dt;
+  //      if(activeSphere == -1){
+            const moveDelta = new THREE.Vector3();
+            if(keys["KeyW"])moveDelta.addScaledVector(lookDir,  speed);
+            if(keys["KeyS"])moveDelta.addScaledVector(lookDir, -speed);
+            if(keys["KeyA"])moveDelta.addScaledVector(rightDir, -speed);
+            if(keys["KeyD"])moveDelta.addScaledVector(rightDir,  speed);
+            position.add(moveDelta);
+    //    }
+
+        checkSpheres(position);
+
+        //Om inne i WH, ändra till med radiella / roterande kordinater kontroller, resulterar i rörelse över geodeesic (tror jag)
+      
+        if(activeSphere == 1 || activeSphere == 2){
+            const currentLoc = (activeSphere == 1) ? wh1Loc : wh2Loc;
+            const nextLoc = (activeSphere == 1) ? wh2Loc : wh1Loc;
+
+         if (radialDistance < radie * 2.5 * 0.5) {
+
+            const otherWH = currentLoc.clone();
+            otherWH.z *= -1;
+
+            const toOtherWh = otherWH.clone().sub(currentLoc).normalize();
+
+            const angleTT = Math.acos(
+                THREE.MathUtils.clamp(
+                    lookDir.dot(toOtherWh),
+                    -1, 1
+                )
+            );
+
+            let axisKUK = new THREE.Vector3().crossVectors(lookDir, toOtherWh);
+            if (axisKUK.lengthSq() < 1e-12) return;
+            axisKUK.normalize();
+
+            // rotera riktning (GLSL-match)
+          //  rotateOrientation(axisKUK, 2.0 * angleTT);
+
+            // rotera offset
+            const inOffset = position.clone()
+                .sub(currentLoc)
+                .normalize()
+                .negate()
+              //  .applyAxisAngle(axisKUK, 2.0 * angleTT)
+                .normalize();
+
+            // teleport (detta var kravet för att fungera)
+            position.copy(
+                otherWH.clone().add(
+                    inOffset.multiplyScalar(radie * 2.5 * 0.5)
+                )
+            );
+        }
+
+        }
+
+        shaderMaterial.uniforms.u_camPos.value.copy(position);
+        shaderMaterial.uniforms.u_lookDir.value.copy(lookDir).normalize();
+        shaderMaterial.uniforms.u_rightDir.value.copy(rightDir.normalize());
+        shaderMaterial.uniforms.u_upDir.value.copy(upDir);
+        shaderMaterial.uniforms.u_time.value = dt;
+
+        //console.log(radialDistance)
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+}
+
+const loader = new THREE.TextureLoader();
+async function init(){
+   
+    const fragmentShader = await loadShader('cool.glsl');
+    const loader = new THREE.TextureLoader();
+    const space2 = await new Promise((resolve, reject)=>{
+        loader.load('space2.png', resolve, undefined, reject);
+    });
+    const space1 = await new Promise((resolve, reject)=>{
+        loader.load('space3.png', resolve, undefined, reject);
+    });
+    space2.minFilter = THREE.LinearFilter;
+    space1.minFilter = THREE.LinearFilter;
+
+    shaderMaterial = new THREE.ShaderMaterial({
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
+        uniforms: {
+            u_time: { value: 0 },
+            u_camPos: { value: new THREE.Vector3()},
+            u_lookDir: { value: new THREE.Vector3()},
+            u_rightDir: { value: new THREE.Vector3()},
+            u_upDir: { value: new THREE.Vector3()},
+            u_resolution: { value: new THREE.Vector2(width, height)},
+            u_texSpace2: { value: space2 },
+            u_texSpace1: { value: space1 },
+            u_radie : { value : radie},
+            u_tubeLength : { value :tubeLength},
+            u_distance : { value :distance},
+            u_outerCurvature : { value : outerCurvature},
+        }
+    });
+
+    const sliders =[
+        { input: 'slider-1', out: 'out-1', uniform: 'u_tubeLength', globalVar: 'tubeLength', format: v => Number(v).toFixed(4)},
+        { input: 'slider-2', out: 'out-2', uniform: 'u_radie', globalVar: 'radie', format: v => Number(v).toFixed(4)},
+        { input: 'slider-3', out: 'out-3', uniform: 'u_distance', globalVar: 'distance', format: v => Number(v).toFixed(8)},
+        { input: 'slider-4', out: 'out-4', uniform: 'u_outerCurvature', globalVar: 'outerCurvature', format: v => Number(v).toFixed(4)}
+    ];
+
+    sliders.forEach(({ input, out, uniform, globalVar, format })=>{
+        const el = document.getElementById(input);
+        const outEl = document.getElementById(out);
+
+        const update =()=>{
+            const val = parseFloat(el.value);
+            outEl.textContent = format(val);
+            shaderMaterial.uniforms[uniform].value = val;
+            window[globalVar] = val;
+
+            if(globalVar == 'radie'){
+                radie = val;
+            }
+            if(globalVar == 'distance'){
+                wh1Loc.z = -val * 0.5;
+                wh2Loc.z = val * 0.5;
+            }      
+        };
+        update();
+        el.addEventListener('input', update);
+        el.addEventListener('change', update);
+    });
+
+    window.addEventListener("resize",()=> {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+
+        shaderMaterial.uniforms.u_resolution.value.set(width, height);
+    });
+    
+    const container = document.getElementById("container");
+
+    container.addEventListener("click",()=> {
+        container.requestPointerLock();
+    });
+
+    document.addEventListener("pointerlockchange",()=> {
+        if(document.pointerLockElement == container){
+            isPanning = true;
+        }else {
+            isPanning = false;
+        }
+    });
+
+    document.addEventListener("pointerlockerror",()=> {
+        isPanning = false;
+    });
+    
+    const plane = new THREE.Mesh(geometry, shaderMaterial);
+    scene.add(plane);
+
+    animate();
+}
+
+
+init();
+
+
+</script>
+</body>
+</html>

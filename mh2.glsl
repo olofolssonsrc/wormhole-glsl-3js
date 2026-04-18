@@ -308,7 +308,7 @@ void main(){
                 worldDir = normalize(rotateAround(worldDir, axis, 2.0*angleTT));
                 vec3 axis2 = normalize(cross(worldDir, normalize(offset)));
 
-                worldDir = rotateAround(worldDir, axis2, degT);;
+                worldDir = rotateAround(worldDir, axis2, degT);
                 start = centers[exitWhHitIndex] + rotateAround(offset, axis2, degT)*(1.0 + almostZero) ;;
             }
 
